@@ -1,0 +1,14 @@
+# Config with secrets — never commit this
+pomodoro timer/Config.swift
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store

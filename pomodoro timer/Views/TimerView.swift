@@ -1,34 +1,19 @@
 import SwiftUI
 
 struct TimerView: View {
-    @State private var viewModel = PomodoroViewModel()
-    @State private var showSettings = false
+    @Environment(PomodoroViewModel.self) private var viewModel
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 52) {
-                sessionHeader
+        VStack(spacing: 52) {
+            sessionHeader
 
-                timerRing
+            timerRing
 
-                controls
-            }
-            .padding(.horizontal)
-            .navigationTitle("Pomodoro")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showSettings = true } label: {
-                        Image(systemName: "gearshape")
-                    }
-                }
-            }
-            .sheet(isPresented: $showSettings) {
-                SettingsView(viewModel: viewModel)
-            }
-            .task {
-                await NotificationService.requestPermission()
-            }
+            controls
+        }
+        .padding(.horizontal)
+        .task {
+            await NotificationService.requestPermission()
         }
     }
 
@@ -41,7 +26,7 @@ struct TimerView: View {
                 .kerning(1.5)
 
             HStack(spacing: 8) {
-                ForEach(0..<viewModel.settings.sessionsBeforeLongBreak, id: \.self) { index in
+                ForEach(0..<viewModel.settings.sessionsPerCycle, id: \.self) { index in
                     Circle()
                         .fill(index < viewModel.sessionsInCurrentCycle ? Color.accentColor : Color(.systemGray5))
                         .frame(width: 8, height: 8)
@@ -52,27 +37,57 @@ struct TimerView: View {
     }
 
     private var timerRing: some View {
-        ZStack {
-            Circle()
-                .stroke(Color(.systemGray5), lineWidth: 10)
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .stroke(Color(.systemGray5), lineWidth: 10)
 
-            Circle()
-                .trim(from: 0, to: viewModel.progress)
-                .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 1), value: viewModel.progress)
+                Circle()
+                    .trim(from: 0, to: viewModel.progress)
+                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 1), value: viewModel.progress)
 
-            VStack(spacing: 4) {
-                Text(viewModel.formattedTime)
-                    .font(.system(size: 60, weight: .thin, design: .rounded))
-                    .monospacedDigit()
+                VStack(spacing: 4) {
+                    Text(viewModel.formattedTime)
+                        .font(.system(size: 60, weight: .thin, design: .rounded))
+                        .monospacedDigit()
 
-                Text("\(viewModel.completedSessions) completed")
+                    Text("\(viewModel.todaysSessions.count) / \(viewModel.settings.dailyGoal) sessions")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+            .frame(width: 260, height: 260)
+
+            dailyGoalBar
+        }
+    }
+
+    private var dailyGoalBar: some View {
+        VStack(spacing: 6) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(.systemGray5))
+                        .frame(height: 6)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(viewModel.dailyGoalReached ? Color.green : Color.accentColor)
+                        .frame(width: geo.size.width * viewModel.dailyGoalProgress, height: 6)
+                        .animation(.easeInOut, value: viewModel.dailyGoalProgress)
+                }
+            }
+            .frame(height: 6)
+
+            if viewModel.dailyGoalReached {
+                Text("Daily goal reached! Tap play to keep going.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.green)
+                    .multilineTextAlignment(.center)
             }
         }
-        .frame(width: 260, height: 260)
+        .padding(.horizontal, 8)
     }
 
     private var controls: some View {
@@ -97,11 +112,19 @@ struct TimerView: View {
                     .clipShape(Circle())
             }
 
-            Color.clear.frame(width: 52, height: 52)
+            Button(action: viewModel.skip) {
+                Image(systemName: "forward.end.fill")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 52, height: 52)
+                    .background(Color(.systemGray6))
+                    .clipShape(Circle())
+            }
         }
     }
 }
 
 #Preview {
     TimerView()
+        .environment(PomodoroViewModel())
 }
