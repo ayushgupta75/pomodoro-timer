@@ -5,6 +5,7 @@ struct SettingsView: View {
 
     @State private var showResetConfirm = false
     @State private var showBugReport = false
+    @State private var showAbout = false
 
     var body: some View {
         @Bindable var vm = viewModel
@@ -95,6 +96,24 @@ struct SettingsView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
                         }
+
+                        Divider()
+
+                        Button {
+                            showAbout = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "info.circle")
+                                Text("About")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .foregroundStyle(Color.accentColor)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                        }
                     }
 
                     Button(role: .destructive) {
@@ -115,6 +134,7 @@ struct SettingsView: View {
                 viewModel.saveSettings()
             }
             .sheet(isPresented: $showBugReport) { BugReportView() }
+            .sheet(isPresented: $showAbout) { AboutView() }
             .alert("Reset All Data?", isPresented: $showResetConfirm) {
                 Button("Reset", role: .destructive) { viewModel.clearAllData() }
                 Button("Cancel", role: .cancel) { }
