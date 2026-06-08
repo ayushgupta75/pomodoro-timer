@@ -51,7 +51,13 @@ pomodoro timer/
 - Never assume — always ask when ambiguous
 
 ## Design Decisions
-<!-- Decisions get logged here as we make them -->
+- **Visual style**: Minimal & Clean — white background, large thin rounded timer font, blue accent, gray secondary elements
+- **Timer ring**: Circular progress ring, blue stroke, `lineCap: .round`, animates with `.linear(duration: 1)`
+- **Session dots**: Small circles below session label, filled blue for completed sessions in current cycle
+- **Controls**: Reset (gray circle, left), Play/Pause (blue filled circle, center), empty placeholder right for balance
+- **Settings**: Sheet modal with a Form + Stepper rows; changes saved on "Done" tap, take effect next session
+- **Notifications**: Requested on launch; fired when a session ends (work→break or break→work)
+- **MVP features**: Core timer + session counter + notifications + custom durations
 
 ## What We Never Do
 - No UIKit
