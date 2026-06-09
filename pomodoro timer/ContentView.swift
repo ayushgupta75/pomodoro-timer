@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var viewModel = PomodoroViewModel()
+    @Environment(AuthService.self) private var authService
 
     var body: some View {
         TabView {
@@ -10,6 +11,7 @@ struct ContentView: View {
                     TimerView()
                         .navigationTitle("Pomodoro")
                         .navigationBarTitleDisplayMode(.inline)
+                        .toolbar { syncStatusItem }
                 }
             }
 
@@ -22,9 +24,24 @@ struct ContentView: View {
             }
         }
         .environment(viewModel)
+        .task {
+            // Initial sync on launch when already signed in
+            await viewModel.syncIfNeeded(token: authService.jwtToken)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var syncStatusItem: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            if viewModel.syncService.isSyncing {
+                ProgressView()
+                    .scaleEffect(0.8)
+            }
+        }
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AuthService.shared)
 }

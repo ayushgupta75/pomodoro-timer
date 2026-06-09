@@ -1,17 +1,20 @@
-//
-//  pomodoro_timerApp.swift
-//  pomodoro timer
-//
-//  Created by Ayush Gupta on 6/8/26.
-//
-
 import SwiftUI
 
 @main
 struct pomodoro_timerApp: App {
+    @State private var authService = AuthService.shared
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                if !Config.backendEnabled || authService.isSignedIn {
+                    ContentView()
+                } else {
+                    SignInView()
+                }
+            }
+            .environment(authService)
+            .animation(.easeInOut(duration: 0.3), value: authService.isSignedIn)
         }
     }
 }
