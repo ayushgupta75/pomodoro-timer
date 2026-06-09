@@ -121,31 +121,31 @@ struct MonthlyStatsView: View {
 
     private var calendarGrid: some View {
         LazyVGrid(columns: columns, spacing: 0) {
-            // Weekday header row
-            ForEach(weekdayHeaders, id: \.self) { label in
-                Text(label)
+            // Weekday header row — use index as ID to avoid dedup of T/S duplicates
+            ForEach(weekdayHeaders.indices, id: \.self) { i in
+                Text(weekdayHeaders[i])
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 28)
             }
 
-            // Leading blanks
-            ForEach(0..<leadingBlanks, id: \.self) { _ in
-                Color.clear.frame(height: cellSize)
-            }
-
-            // Day cells
-            ForEach(1...daysInMonth, id: \.self) { day in
-                DayCell(
-                    day: day,
-                    sessionCount: sessionsByDay[day]?.count ?? 0,
-                    goal: viewModel.settings.dailyGoal,
-                    isToday: isToday(day),
-                    isSelected: selectedDay == day
-                )
-                .onTapGesture {
-                    selectedDay = selectedDay == day ? nil : day
+            // Single loop over all cells — avoids ID collision between blanks and day numbers
+            ForEach(0..<(leadingBlanks + daysInMonth), id: \.self) { index in
+                if index < leadingBlanks {
+                    Color.clear.frame(height: cellSize)
+                } else {
+                    let day = index - leadingBlanks + 1
+                    DayCell(
+                        day: day,
+                        sessionCount: sessionsByDay[day]?.count ?? 0,
+                        goal: viewModel.settings.dailyGoal,
+                        isToday: isToday(day),
+                        isSelected: selectedDay == day
+                    )
+                    .onTapGesture {
+                        selectedDay = selectedDay == day ? nil : day
+                    }
                 }
             }
         }

@@ -27,7 +27,7 @@ async def sync_sessions(
     """
     if payload.sessions:
         stmt = insert(SessionRecord).values([
-            {"id": s.id, "user_id": current_user.id, "completed_at": s.completed_at}
+            {"id": s.id, "user_id": current_user.id, "started_at": s.started_at, "completed_at": s.completed_at}
             for s in payload.sessions
         ]).on_conflict_do_nothing(index_elements=["id"])
         await db.execute(stmt)
@@ -42,5 +42,5 @@ async def sync_sessions(
 
     return SyncSessionsResponse(
         synced=len(payload.sessions),
-        sessions=[SessionRecordSchema(id=s.id, completed_at=s.completed_at) for s in all_sessions],
+        sessions=[SessionRecordSchema(id=s.id, started_at=s.started_at, completed_at=s.completed_at) for s in all_sessions],
     )

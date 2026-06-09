@@ -10,24 +10,16 @@ final class PomodoroViewModel {
     private(set) var completedSessions: Int = 0  // full work+break pairs
     private(set) var sessionLog: [SessionRecord] = []
 
-    // tracks work periods to determine when long break triggers
     private var workPeriodsCompleted: Int = 0
     private var timerTask: Task<Void, Never>?
     private var workSessionStartedAt: Date = .now
     private let ambientSound = AmbientSoundService()
-
-    let syncService = SyncService()
 
     init() {
         let saved = Self.loadSettings()
         self.settings = saved
         self.remainingSeconds = saved.workMinutes * 60
         self.sessionLog = Self.loadSessionLog()
-
-        syncService.onNetworkReconnect = { [weak self] in
-            Task { await self?.syncIfNeeded(token: AuthService.shared.jwtToken) }
-        }
-        syncService.startMonitoring()
     }
 
     var formattedTime: String {
@@ -40,7 +32,6 @@ final class PomodoroViewModel {
         return Double(total - remainingSeconds) / Double(total)
     }
 
-    // dots in timer view: sessions completed within the current cycle
     var sessionsInCurrentCycle: Int {
         completedSessions % settings.sessionsPerCycle
     }
@@ -61,7 +52,6 @@ final class PomodoroViewModel {
 
     func start() {
         timerTask?.cancel()
-        // Record wall-clock start for new work sessions; preserve it across pause/resume
         if sessionType == .work && timerState != .paused {
             workSessionStartedAt = Date()
         }
@@ -145,11 +135,9 @@ final class PomodoroViewModel {
         NotificationService.scheduleSessionEndNotification(for: sessionType)
 
         if sessionType == .work {
-            // Work ended — pick break type based on how many work periods done
             workPeriodsCompleted += 1
             sessionType = workPeriodsCompleted % settings.sessionsPerCycle == 0 ? .longBreak : .shortBreak
         } else {
-            // Break ended — full session (work + break) complete
             completedSessions += 1
             let record = SessionRecord(id: UUID(), sessionType: .work, startedAt: workSessionStartedAt, completedAt: Date())
             sessionLog.append(record)
@@ -165,8 +153,6 @@ final class PomodoroViewModel {
         } else {
             start()
         }
-
-        Task { await syncIfNeeded(token: AuthService.shared.jwtToken) }
     }
 
     private func totalSeconds(for session: SessionType) -> Int {
@@ -186,28 +172,6 @@ final class PomodoroViewModel {
         }
         return Dictionary(grouping: inMonth) {
             cal.component(.day, from: $0.completedAt)
-        }
-    }
-
-    // MARK: - Sync
-
-    func syncIfNeeded(token: String?) async {
-        guard Config.backendEnabled, let token else { return }
-        let pending = sessionLog.filter { $0.syncState == .pending }
-        guard !pending.isEmpty else { return }
-
-        do {
-            let syncedIDs = try await syncService.syncSessions(pending, token: token)
-            let idSet = Set(syncedIDs)
-            for i in sessionLog.indices where idSet.contains(sessionLog[i].id) {
-                sessionLog[i].syncState = .synced
-            }
-            saveSessionLog()
-            try await syncService.syncGoal(settings.dailyGoal, token: token)
-        } catch APIError.unauthorized {
-            AuthService.shared.signOut()
-        } catch {
-            // network error — records stay .pending, retry on next reconnect
         }
     }
 

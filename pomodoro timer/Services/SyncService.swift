@@ -14,7 +14,6 @@ final class SyncService {
     private var wasOffline = false
 
     func startMonitoring() {
-        guard Config.backendEnabled else { return }
         let m = NWPathMonitor()
         m.pathUpdateHandler = { [weak self] path in
             guard let self else { return }

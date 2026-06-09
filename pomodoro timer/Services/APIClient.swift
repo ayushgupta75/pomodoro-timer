@@ -19,7 +19,7 @@ enum APIError: LocalizedError {
 }
 
 enum APIClient {
-    private static var baseURL: String { Config.backendURL }
+    private static var baseURL: String { "http://localhost" }
 
     private static let encoder: JSONEncoder = {
         let e = JSONEncoder()
@@ -54,6 +54,7 @@ enum APIClient {
     static func syncSessions(_ sessions: [SessionRecord], token: String) async throws -> [UUID] {
         struct SessionIn: Encodable {
             let id: String
+            let startedAt: Date
             let completedAt: Date
         }
         struct SyncRequest: Encodable { let sessions: [SessionIn] }
@@ -61,7 +62,7 @@ enum APIClient {
         struct SyncResponse: Decodable { let sessions: [SessionOut] }
 
         let body = SyncRequest(sessions: sessions.map {
-            SessionIn(id: $0.id.uuidString, completedAt: $0.completedAt)
+            SessionIn(id: $0.id.uuidString, startedAt: $0.startedAt, completedAt: $0.completedAt)
         })
         let response: SyncResponse = try await post(path: "/sessions/sync", body: body, token: token)
         return response.sessions.compactMap { UUID(uuidString: $0.id) }

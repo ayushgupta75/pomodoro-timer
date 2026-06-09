@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class SessionRecordSchema(BaseModel):
     id: str
+    started_at: datetime
     completed_at: datetime
 
 
