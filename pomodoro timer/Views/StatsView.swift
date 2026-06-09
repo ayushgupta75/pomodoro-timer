@@ -3,30 +3,56 @@ import SwiftUI
 struct StatsView: View {
     @Environment(PomodoroViewModel.self) private var viewModel
 
-    private var todayCount: Int { viewModel.todaysSessions.count }
-    private var totalCount: Int { viewModel.sessionLog.count }
+    @State private var showMonthly = false
+
+    private var todayDuration: String {
+        let seconds = viewModel.todaysSessions.reduce(0.0) {
+            $0 + $1.completedAt.timeIntervalSince($1.startedAt)
+        }
+        let minutes = Int(seconds) / 60
+        if minutes == 0 { return "0m" }
+        if minutes < 60 { return "\(minutes)m" }
+        let h = minutes / 60
+        let m = minutes % 60
+        return m == 0 ? "\(h)h" : "\(h)h \(m)m"
+    }
+
+    private var goalDaysThisMonth: Int {
+        let cal = Calendar.current
+        let byDay = viewModel.sessionsByDay(in: .now)
+        let daysInMonth = cal.range(of: .day, in: .month, for: .now)?.count ?? 30
+        return (1...daysInMonth).filter { (byDay[$0]?.count ?? 0) >= viewModel.settings.dailyGoal }.count
+    }
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
                     HStack(spacing: 0) {
-                        StatCard(value: "\(todayCount)", label: "Today")
+                        StatCard(value: todayDuration, label: "Today")
                         Divider().frame(height: 44)
-                        StatCard(value: "\(totalCount)", label: "All Time")
-                        Divider().frame(height: 44)
-                        StatCard(
-                            value: "\(viewModel.sessionsInCurrentCycle)/\(viewModel.settings.sessionsPerCycle)",
-                            label: "This Cycle"
-                        )
+                        Button {
+                            showMonthly = true
+                        } label: {
+                            StatCard(
+                                value: "\(goalDaysThisMonth)d",
+                                label: "Monthly",
+                                isInteractive: true
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                     .listRowInsets(.init())
                     .listRowBackground(Color.clear)
                 }
+                .sheet(isPresented: $showMonthly) {
+                    MonthlyStatsView()
+                        .environment(viewModel)
+                }
 
                 Section {
                     DailyGoalRow(
-                        completed: todayCount,
+                        completed: viewModel.todaysSessions.count,
                         goal: viewModel.settings.dailyGoal,
                         progress: viewModel.dailyGoalProgress
                     )
@@ -104,15 +130,23 @@ private struct DailyGoalRow: View {
 private struct StatCard: View {
     let value: String
     let label: String
+    var isInteractive: Bool = false
 
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
                 .font(.system(size: 32, weight: .thin, design: .rounded))
                 .monospacedDigit()
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 2) {
+                Text(label)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if isInteractive {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
@@ -138,6 +172,11 @@ private struct SessionRow: View {
         }
     }
 
+    private var timeRange: String {
+        let fmt = Date.FormatStyle().hour(.defaultDigits(amPM: .abbreviated)).minute(.twoDigits)
+        return "\(record.startedAt.formatted(fmt)) – \(record.completedAt.formatted(fmt))"
+    }
+
     var body: some View {
         HStack {
             Image(systemName: icon)
@@ -147,9 +186,10 @@ private struct SessionRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(record.sessionType.rawValue)
                     .font(.subheadline)
-                Text(record.completedAt.formatted(date: .omitted, time: .shortened))
+                Text(timeRange)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
 
             Spacer()

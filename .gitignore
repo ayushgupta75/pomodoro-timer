@@ -1,5 +1,6 @@
-# Config with secrets — never commit this
+# Config with secrets — never commit these
 pomodoro timer/Config.swift
+backend/.env
 
 # Xcode
 *.xcuserstate

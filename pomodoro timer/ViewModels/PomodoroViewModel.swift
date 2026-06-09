@@ -10,9 +10,9 @@ final class PomodoroViewModel {
     private(set) var completedSessions: Int = 0  // full work+break pairs
     private(set) var sessionLog: [SessionRecord] = []
 
-    // tracks work periods to determine when long break triggers
     private var workPeriodsCompleted: Int = 0
     private var timerTask: Task<Void, Never>?
+    private var workSessionStartedAt: Date = .now
     private let ambientSound = AmbientSoundService()
 
     init() {
@@ -32,7 +32,6 @@ final class PomodoroViewModel {
         return Double(total - remainingSeconds) / Double(total)
     }
 
-    // dots in timer view: sessions completed within the current cycle
     var sessionsInCurrentCycle: Int {
         completedSessions % settings.sessionsPerCycle
     }
@@ -53,6 +52,9 @@ final class PomodoroViewModel {
 
     func start() {
         timerTask?.cancel()
+        if sessionType == .work && timerState != .paused {
+            workSessionStartedAt = Date()
+        }
         timerState = .running
         if sessionType == .work {
             ambientSound.play(settings.ambientSound)
@@ -80,6 +82,7 @@ final class PomodoroViewModel {
         timerTask = nil
         timerState = .idle
         remainingSeconds = totalSeconds(for: sessionType)
+        workSessionStartedAt = .now
         ambientSound.stop()
     }
 
@@ -132,13 +135,11 @@ final class PomodoroViewModel {
         NotificationService.scheduleSessionEndNotification(for: sessionType)
 
         if sessionType == .work {
-            // Work ended — pick break type based on how many work periods done
             workPeriodsCompleted += 1
             sessionType = workPeriodsCompleted % settings.sessionsPerCycle == 0 ? .longBreak : .shortBreak
         } else {
-            // Break ended — full session (work + break) complete
             completedSessions += 1
-            let record = SessionRecord(id: UUID(), sessionType: .work, completedAt: Date())
+            let record = SessionRecord(id: UUID(), sessionType: .work, startedAt: workSessionStartedAt, completedAt: Date())
             sessionLog.append(record)
             saveSessionLog()
             sessionType = .work
@@ -159,6 +160,18 @@ final class PomodoroViewModel {
         case .work:        return settings.workMinutes * 60
         case .shortBreak:  return settings.shortBreakMinutes * 60
         case .longBreak:   return settings.longBreakMinutes * 60
+        }
+    }
+
+    func sessionsByDay(in month: Date) -> [Int: [SessionRecord]] {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.year, .month], from: month)
+        let inMonth = sessionLog.filter {
+            let c = cal.dateComponents([.year, .month], from: $0.completedAt)
+            return c.year == comps.year && c.month == comps.month
+        }
+        return Dictionary(grouping: inMonth) {
+            cal.component(.day, from: $0.completedAt)
         }
     }
 
