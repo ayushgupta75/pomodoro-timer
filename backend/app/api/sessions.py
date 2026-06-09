@@ -31,6 +31,7 @@ async def sync_sessions(
             for s in payload.sessions
         ]).on_conflict_do_nothing(index_elements=["id"])
         await db.execute(stmt)
+        await db.commit()
         logger.info("Synced %d sessions for user %s", len(payload.sessions), current_user.id)
 
     result = await db.execute(

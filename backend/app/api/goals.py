@@ -48,5 +48,5 @@ async def sync_goals(
     all_goals = result.scalars().all()
 
     return DailyGoalResponse(
-        goals=[DailyGoalSchema(date=g.date, goal=g.goal) for g in all_goals]
+        goals=[DailyGoalSchema(date=g.date, goal=g.goal, duration_seconds=g.duration_seconds) for g in all_goals]
     )

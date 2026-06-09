@@ -168,9 +168,17 @@ struct MonthlyStatsView: View {
             if let day = selectedDay {
                 let sessions = selectedSessions
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(dayTitle(day))
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.vertical, 12)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(dayTitle(day))
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                        if !sessions.isEmpty {
+                            Text(daySummary(sessions))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 12)
 
                     if sessions.isEmpty {
                         Text("No sessions recorded")
@@ -210,6 +218,21 @@ struct MonthlyStatsView: View {
         comps.day = day
         guard let date = cal.date(from: comps) else { return false }
         return cal.isDateInToday(date)
+    }
+
+    private func daySummary(_ sessions: [SessionRecord]) -> String {
+        let count = sessions.count
+        let totalSeconds = sessions.reduce(0.0) { $0 + $1.completedAt.timeIntervalSince($1.startedAt) }
+        let minutes = Int(totalSeconds) / 60
+        let timeStr: String
+        if minutes < 60 {
+            timeStr = "\(minutes)m"
+        } else {
+            let h = minutes / 60
+            let m = minutes % 60
+            timeStr = m == 0 ? "\(h)h" : "\(h)h \(m)m"
+        }
+        return "\(count) session\(count == 1 ? "" : "s") · \(timeStr)"
     }
 
     private func dayTitle(_ day: Int) -> String {

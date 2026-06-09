@@ -3,8 +3,19 @@ import SwiftUI
 struct StatsView: View {
     @Environment(PomodoroViewModel.self) private var viewModel
 
-    private var todayCount: Int { viewModel.todaysSessions.count }
     @State private var showMonthly = false
+
+    private var todayDuration: String {
+        let seconds = viewModel.todaysSessions.reduce(0.0) {
+            $0 + $1.completedAt.timeIntervalSince($1.startedAt)
+        }
+        let minutes = Int(seconds) / 60
+        if minutes == 0 { return "0m" }
+        if minutes < 60 { return "\(minutes)m" }
+        let h = minutes / 60
+        let m = minutes % 60
+        return m == 0 ? "\(h)h" : "\(h)h \(m)m"
+    }
 
     private var goalDaysThisMonth: Int {
         let cal = Calendar.current
@@ -18,7 +29,7 @@ struct StatsView: View {
             List {
                 Section {
                     HStack(spacing: 0) {
-                        StatCard(value: "\(todayCount)", label: "Today")
+                        StatCard(value: todayDuration, label: "Today")
                         Divider().frame(height: 44)
                         Button {
                             showMonthly = true
@@ -41,7 +52,7 @@ struct StatsView: View {
 
                 Section {
                     DailyGoalRow(
-                        completed: todayCount,
+                        completed: viewModel.todaysSessions.count,
                         goal: viewModel.settings.dailyGoal,
                         progress: viewModel.dailyGoalProgress
                     )
