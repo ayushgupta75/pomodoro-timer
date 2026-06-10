@@ -34,7 +34,10 @@ struct MonthlyStatsView: View {
     }
 
     private var goalDaysCount: Int {
-        (1...daysInMonth).filter { (sessionsByDay[$0]?.count ?? 0) >= viewModel.settings.dailyGoal }.count
+        let goalSeconds = viewModel.settings.dailyGoalHours * 3600
+        return (1...daysInMonth).filter { day in
+            (sessionsByDay[day] ?? []).reduce(0) { $0 + $1.durationSeconds } >= goalSeconds
+        }.count
     }
 
     private var selectedSessions: [SessionRecord] {
@@ -136,10 +139,11 @@ struct MonthlyStatsView: View {
                     Color.clear.frame(height: cellSize)
                 } else {
                     let day = index - leadingBlanks + 1
+                    let daySeconds = (sessionsByDay[day] ?? []).reduce(0) { $0 + $1.durationSeconds }
                     DayCell(
                         day: day,
-                        sessionCount: sessionsByDay[day]?.count ?? 0,
-                        goal: viewModel.settings.dailyGoal,
+                        daySeconds: daySeconds,
+                        goalSeconds: viewModel.settings.dailyGoalHours * 3600,
                         isToday: isToday(day),
                         isSelected: selectedDay == day
                     )
@@ -222,8 +226,7 @@ struct MonthlyStatsView: View {
 
     private func daySummary(_ sessions: [SessionRecord]) -> String {
         let count = sessions.count
-        let totalSeconds = sessions.reduce(0.0) { $0 + $1.completedAt.timeIntervalSince($1.startedAt) }
-        let minutes = Int(totalSeconds) / 60
+        let minutes = sessions.reduce(0) { $0 + $1.durationSeconds } / 60
         let timeStr: String
         if minutes < 60 {
             timeStr = "\(minutes)m"
@@ -247,14 +250,14 @@ struct MonthlyStatsView: View {
 
 private struct DayCell: View {
     let day: Int
-    let sessionCount: Int
-    let goal: Int
+    let daySeconds: Int
+    let goalSeconds: Int
     let isToday: Bool
     let isSelected: Bool
 
     private var fillColor: Color? {
-        if sessionCount == 0 { return nil }
-        return sessionCount >= goal ? .green : .accentColor
+        if daySeconds == 0 { return nil }
+        return daySeconds >= goalSeconds ? .green : .accentColor
     }
 
     var body: some View {
@@ -278,8 +281,7 @@ private struct DayCell: View {
                         (fillColor != nil || isSelected) ? .white : .primary
                     )
 
-                // Dot indicator instead of tiny number — cleaner at small size
-                if sessionCount > 0 {
+                if daySeconds > 0 {
                     Circle()
                         .fill(fillColor != nil ? .white.opacity(0.7) : fillColor ?? .clear)
                         .frame(width: 4, height: 4)

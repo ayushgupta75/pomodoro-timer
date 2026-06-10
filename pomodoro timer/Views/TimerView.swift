@@ -53,7 +53,7 @@ struct TimerView: View {
                         .font(.system(size: 60, weight: .thin, design: .rounded))
                         .monospacedDigit()
 
-                    Text("\(viewModel.todaysSessions.count) / \(viewModel.settings.dailyGoal) sessions")
+                    Text(viewModel.todayTimerLabel)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .monospacedDigit()

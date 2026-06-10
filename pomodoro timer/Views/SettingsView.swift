@@ -30,9 +30,9 @@ struct SettingsView: View {
                         Divider()
                         WheelPickerRow(
                             label: "Daily goal",
-                            value: $vm.settings.dailyGoal,
-                            range: Array(1...20),
-                            unit: "sessions"
+                            value: $vm.settings.dailyGoalHours,
+                            range: Array(1...12),
+                            unit: "hr"
                         )
                     }
 
