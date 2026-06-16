@@ -134,6 +134,9 @@ final class PomodoroViewModel {
             let remaining = endDate.timeIntervalSince(Date())
             if remaining <= 0 {
                 timerTask?.cancel()
+                if sessionType == .work {
+                    workSessionRunningSeconds += remainingSeconds
+                }
                 remainingSeconds = 0
                 advanceSession()
                 return
@@ -218,13 +221,13 @@ final class PomodoroViewModel {
 
         if sessionType == .work {
             workPeriodsCompleted += 1
-            sessionType = workPeriodsCompleted % settings.sessionsPerCycle == 0 ? .longBreak : .shortBreak
-        } else {
             completedSessions += 1
             let record = SessionRecord(id: UUID(), sessionType: .work, startedAt: workSessionStartedAt, completedAt: Date(), durationSeconds: workSessionRunningSeconds)
             sessionLog.append(record)
             saveSessionLog()
             workSessionRunningSeconds = 0
+            sessionType = workPeriodsCompleted % settings.sessionsPerCycle == 0 ? .longBreak : .shortBreak
+        } else {
             sessionType = .work
         }
 

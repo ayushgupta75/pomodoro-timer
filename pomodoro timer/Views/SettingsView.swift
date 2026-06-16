@@ -13,16 +13,16 @@ struct SettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
-                    SettingsSection(title: "Work") {
+                    SettingsSection(title: "Session") {
                         WheelPickerRow(
-                            label: "Work Duration",
+                            label: "Session time",
                             value: $vm.settings.workMinutes,
                             range: Array(1...90),
                             unit: "min"
                         )
                         Divider()
                         WheelPickerRow(
-                            label: "Sessions per cycle",
+                            label: "Sessions before long break",
                             value: $vm.settings.sessionsPerCycle,
                             range: Array(1...8),
                             unit: "sessions"

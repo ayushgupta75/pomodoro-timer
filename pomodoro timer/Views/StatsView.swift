@@ -175,7 +175,8 @@ private struct SessionRow: View {
 
     private var timeRange: String {
         let fmt = Date.FormatStyle().hour(.defaultDigits(amPM: .abbreviated)).minute(.twoDigits)
-        return "\(record.startedAt.formatted(fmt)) – \(record.completedAt.formatted(fmt))"
+        let workEndedAt = record.startedAt.addingTimeInterval(Double(record.durationSeconds))
+        return "\(record.startedAt.formatted(fmt)) – \(workEndedAt.formatted(fmt))"
     }
 
     var body: some View {

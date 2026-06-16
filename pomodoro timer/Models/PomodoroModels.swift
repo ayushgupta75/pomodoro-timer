@@ -20,12 +20,12 @@ enum AmbientSoundType: String, CaseIterable, Codable {
 }
 
 struct PomodoroSettings: Codable, Equatable {
-    var workMinutes: Int = 25
-    var shortBreakMinutes: Int = 5
-    var longBreakMinutes: Int = 15
-    var sessionsPerCycle: Int = 4
-    var dailyGoalHours: Int = 4
-    var ambientSound: AmbientSoundType = .brownNoise
+    var workMinutes: Int = 4
+    var shortBreakMinutes: Int = 3
+    var longBreakMinutes: Int = 5
+    var sessionsPerCycle: Int = 3
+    var dailyGoalHours: Int = 1
+    var ambientSound: AmbientSoundType = .none
 }
 
 enum SyncState: String, Codable {
