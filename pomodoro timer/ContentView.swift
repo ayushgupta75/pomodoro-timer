@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var viewModel = PomodoroViewModel()
-
     var body: some View {
         TabView {
             Tab("Timer", systemImage: "timer") {
@@ -21,10 +19,10 @@ struct ContentView: View {
                 SettingsView()
             }
         }
-        .environment(viewModel)
     }
 }
 
 #Preview {
     ContentView()
+        .environment(PomodoroViewModel())
 }

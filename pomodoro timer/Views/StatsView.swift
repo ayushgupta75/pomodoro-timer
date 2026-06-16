@@ -6,10 +6,8 @@ struct StatsView: View {
     @State private var showMonthly = false
 
     private var todayDuration: String {
-        let seconds = viewModel.todaysSessions.reduce(0.0) {
-            $0 + $1.completedAt.timeIntervalSince($1.startedAt)
-        }
-        let minutes = Int(seconds) / 60
+        let seconds = viewModel.todaysTotalSeconds
+        let minutes = seconds / 60
         if minutes == 0 { return "0m" }
         if minutes < 60 { return "\(minutes)m" }
         let h = minutes / 60
@@ -20,8 +18,11 @@ struct StatsView: View {
     private var goalDaysThisMonth: Int {
         let cal = Calendar.current
         let byDay = viewModel.sessionsByDay(in: .now)
+        let goalSeconds = viewModel.settings.dailyGoalHours * 3600
         let daysInMonth = cal.range(of: .day, in: .month, for: .now)?.count ?? 30
-        return (1...daysInMonth).filter { (byDay[$0]?.count ?? 0) >= viewModel.settings.dailyGoal }.count
+        return (1...daysInMonth).filter { day in
+            (byDay[day] ?? []).reduce(0) { $0 + $1.durationSeconds } >= goalSeconds
+        }.count
     }
 
     var body: some View {
@@ -52,8 +53,8 @@ struct StatsView: View {
 
                 Section {
                     DailyGoalRow(
-                        completed: viewModel.todaysSessions.count,
-                        goal: viewModel.settings.dailyGoal,
+                        completedLabel: todayDuration,
+                        goalLabel: "\(viewModel.settings.dailyGoalHours)h",
                         progress: viewModel.dailyGoalProgress
                     )
                     .listRowInsets(.init(top: 0, leading: 0, bottom: 0, trailing: 0))
@@ -83,8 +84,8 @@ struct StatsView: View {
 }
 
 private struct DailyGoalRow: View {
-    let completed: Int
-    let goal: Int
+    let completedLabel: String
+    let goalLabel: String
     let progress: Double
 
     var body: some View {
@@ -94,7 +95,7 @@ private struct DailyGoalRow: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                 Spacer()
-                Text("\(completed) / \(goal) sessions")
+                Text("\(completedLabel) / \(goalLabel)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
